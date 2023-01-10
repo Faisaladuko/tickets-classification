@@ -5,7 +5,7 @@ from sklearn.metrics import silhouette_score
 import re
 import matplotlib.pyplot as plt
 
-
+# Reading data from excel
 jan = pd.read_excel('data\Jan.xlsx')
 feb = pd.read_excel('data\Feb.xlsx')
 mar = pd.read_excel('data\Mar.xlsx')
@@ -17,16 +17,18 @@ aug = pd.read_excel('data\Aug.xlsx')
 sept = pd.read_excel('data\Sept.xlsx')
 oct = pd.read_excel('data\Oct.xlsx')
 
+# Joining and preprocessing/Cleaning data
 dataa = pd.concat([jan,feb,mar,april,may,jun,jul,aug,sept,oct]).reset_index()
-#dataa = dataa[['Description','Short description','Reason']]
-#dataa['Description2'] = dataa['Description'] +" " + dataa['Short description'] 
 dataa['Description2'] = dataa['Description'].apply(lambda x: str(x).split(':')[1:])
 dataa['Description2'] = dataa['Description2'].apply(lambda x: ''.join([str(a) for a in x]))
 dataa['Description2'] = dataa['Description2'].apply(lambda x:re.sub(r'[^a-zA-Z0-9 ]'," ",x)) 
 dataa['Description2'] = dataa['Description2'].apply(lambda x:re.sub(r'[0-9]',"",x)) 
-vecc = TfidfVectorizer(stop_words = 'english', encoding ='utf-8')
 
+# Vectorizes text data
+vecc = TfidfVectorizer(stop_words = 'english', encoding ='utf-8')
 d_fet = vecc.fit_transform(dataa['Description2'])
+
+#Finding the optimal number of clusters for K-Mean
 N= range(2, 500, 20)
 pdata = pd.DataFrame(columns = ["N","SILH"])
 for cluster in N:
@@ -36,16 +38,15 @@ for cluster in N:
     #print('For N= ',cluster,': Average Silhoute Score = ', av_silh_score)
     newv = {"N":cluster, "SILH":av_silh_score}
     pdata=pdata.append(newv, ignore_index = True)
-
 pdata.plot(kind= 'line', x = 'N', y='SILH')
 plt.show
 
-
+# Fitting K-Mean
 mdl2 = KMeans(n_clusters =21,init = 'k-means++',max_iter=200, n_init='auto', random_state = 10)
 mdl2 = mdl2.fit(d_fet)
 dataa['MyCategories'] = mdl2.labels_
 
-
+# Extracting features text for each category
 words = vecc.get_feature_names_out()
 cent = mdl2.cluster_centers_.argsort()[:, ::-1]
 xx=[]
